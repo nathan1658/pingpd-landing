@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PingPD · 柏金遜症每日記錄 ─ XXXX 醫學院合作研究</title>
+  <meta name="description" content="PingPD 係同 XXXX 醫學院神經內科聯合開發嘅每日記錄 app。用 UPDRS-8 幫柏金遜症病友同屋企人喺覆診前準備好清晰嘅數據。Beta 測試中。" />
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Editorial type stack: Noto Serif HK (CJK display) + Fraunces (Latin display) + Noto Sans HK (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+HK:wght@400;500;600;700&family=Noto+Sans+HK:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans:    ['Noto Sans HK', 'system-ui', 'sans-serif'],
+            serif:   ['"Noto Serif HK"', 'Fraunces', 'Georgia', 'serif'],
+            display: ['Fraunces', '"Noto Serif HK"', 'Georgia', 'serif'],
+          },
+          colors: {
+            paper:  '#F4EFE5',      // warm newsprint
+            paper2: '#EBE4D4',      // deeper cream, for strips
+            ink:    '#141416',      // near-black
+            ink70:  'rgba(20,20,22,0.72)',
+            ink55:  'rgba(20,20,22,0.55)',
+            ink40:  'rgba(20,20,22,0.40)',
+            ink15:  'rgba(20,20,22,0.15)',
+            ink10:  'rgba(20,20,22,0.10)',
+            rule:   '#1F1F22',      // thin rule near-black
+            clinic: '#0D5E6F',      // clinical cyan — darker, more sober
+            clinicLight: '#E4EEEF',
+            forest: '#1F4938',      // deep forest (primary CTA)
+            forestInk: '#0F2A1E',
+            rust:   '#A84A2D',      // single accent rust for pull-quotes
+          },
+          letterSpacing: {
+            caps: '0.24em',
+          },
+          borderWidth: {
+            'hair': '0.5px',
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    :root { color-scheme: light; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Noto Sans HK', system-ui, sans-serif;
+      color: #141416;
+      background: #F4EFE5;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    /* Display CJK serif with Latin-pair */
+    .display { font-family: 'Noto Serif HK', 'Fraunces', Georgia, serif; font-feature-settings: "kern" 1; }
+    .display em, .display .em { font-family: 'Fraunces', 'Noto Serif HK', serif; font-style: italic; font-weight: 500; }
+
+    /* Small-cap metadata style */
+    .caps { font-family: 'Noto Sans HK', sans-serif; text-transform: uppercase; letter-spacing: 0.24em; font-size: 0.72rem; font-weight: 600; }
+
+    /* Drop-cap for first paragraph of long-form sections */
+    .drop-cap::first-letter {
+      font-family: 'Noto Serif HK', serif;
+      font-size: 3.6em;
+      line-height: 0.85;
+      float: left;
+      padding-right: .12em;
+      padding-top: .08em;
+      font-weight: 600;
+      color: #141416;
+    }
+
+    /* Gentle fade on scroll — no translate/bob */
+    .reveal { opacity: 0; transition: opacity .8s ease; }
+    .reveal.in { opacity: 1; }
+
+    /* Thin hairline */
+    .hr-thin { border-top: 1px solid rgba(20,20,22,0.18); }
+
+    /* Chapter rail number */
+    .chapter-num {
+      font-family: 'Fraunces', serif;
+      font-style: italic;
+      font-weight: 400;
+    }
+
+    /* Figure of a flat phone screenshot — no phone frame, just a bordered rectangle */
+    .screen {
+      background: #FBFAF6;
+      border: 1px solid rgba(20,20,22,0.14);
+      position: relative;
+    }
+    .screen::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 50%; width: 46%; height: 22px;
+      background: rgba(20,20,22,0.05);
+      transform: translateX(-50%);
+      border-bottom-left-radius: 10px;
+      border-bottom-right-radius: 10px;
+    }
+
+    /* Severity pill — clinical, flat */
+    .sev-pill { display: inline-flex; align-items: center; gap: .4rem; padding: 2px 8px; border-radius: 2px; font-size: 11px; font-weight: 600; border: 1px solid; }
+    .sev-0 { color: #2F6B3D; border-color: #C3D9C6; background: #EEF4EA; }
+    .sev-1 { color: #4D6B1F; border-color: #D2D9B0; background: #F1F2E2; }
+    .sev-2 { color: #8A5A12; border-color: #D9C79E; background: #F4EACD; }
+    .sev-3 { color: #8B3B12; border-color: #D9B295; background: #EFD9C4; }
+    .sev-4 { color: #8B1F1F; border-color: #D9A19E; background: #ECC9C6; }
+
+    /* Simple numeric figure block — newspaper stat */
+    .fig { font-family: 'Fraunces', serif; font-weight: 500; font-size: clamp(2.6rem, 4.5vw, 3.8rem); line-height: 1; letter-spacing: -0.02em; }
+
+    /* Link underline rhythm */
+    .link { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; transition: text-decoration-thickness .15s ease; }
+    .link:hover { text-decoration-thickness: 2px; }
+
+    /* Focus styles */
+    a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible {
+      outline: 2px solid #0D5E6F;
+      outline-offset: 3px;
+    }
+
+    /* Restrained scrollbar */
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: #EBE4D4; }
+    ::-webkit-scrollbar-thumb { background: #C6BBA1; border-radius: 0; }
+    ::-webkit-scrollbar-thumb:hover { background: #A89A7A; }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+      .reveal { opacity: 1 !important; }
+    }
+
+    /* Section numbers */
+    .roman {
+      font-family: 'Fraunces', serif;
+      font-style: italic;
+      font-weight: 400;
+      color: rgba(20,20,22,0.5);
+      letter-spacing: 0.02em;
+    }
+
+    /* Tight definition list */
+    dl.index dt { font-family: 'Noto Serif HK', serif; font-weight: 600; }
+    dl.index dd { margin-left: 0; padding-bottom: .9rem; margin-bottom: .9rem; border-bottom: 1px solid rgba(20,20,22,0.1); }
+
+    /* Phone-screen inner UI type (match the app) */
+    .ui { font-family: 'Noto Sans HK', sans-serif; }
+
+    /* Subtle paper texture — fine dot grid */
+    .paper-tex {
+      background-image: radial-gradient(rgba(20,20,22,0.06) 1px, transparent 1px);
+      background-size: 22px 22px;
+      background-position: 0 0;
+    }
+
+    /* Horizontal nav border */
+    .tnav a.active { color: #141416; }
+
+    /* ============ Editorial SVG illustrations ============ */
+    /* Hand-drawn ink line style: crisp single-weight strokes, no fills */
+    .ink-line       { stroke: #141416; stroke-width: 1.4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .ink-line-thin  { stroke: #141416; stroke-width: 0.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .ink-accent     { stroke: #0D5E6F; stroke-width: 1.4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .ink-rust       { stroke: #A84A2D; stroke-width: 1.4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .ink-fill       { fill: #141416; }
+    .ink-fill-accent{ fill: #0D5E6F; }
+    .ink-dash       { stroke: #141416; stroke-width: 1; fill: none; stroke-dasharray: 3 3; }
+    .ink-label      { font-family: 'Fraunces', 'Noto Serif HK', serif; font-style: italic; font-size: 11px; fill: rgba(20,20,22,0.7); }
+    .ink-label-caps { font-family: 'Noto Sans HK', sans-serif; text-transform: uppercase; letter-spacing: 0.22em; font-size: 9.5px; fill: rgba(20,20,22,0.55); font-weight: 600; }
+
+    /* Fleuron divider — little ink ornament between rules */
+    .fleuron { display: flex; align-items: center; justify-content: center; gap: 1.25rem; color: rgba(20,20,22,0.35); }
+    .fleuron hr { flex: 1; border: 0; border-top: 1px solid rgba(20,20,22,0.18); margin: 0; }
+    .fleuron svg { width: 22px; height: 22px; }
+
+    /* Chapter head: Roman numeral + small glyph inline */
+    .chapter-head { display: flex; align-items: center; gap: .6rem; }
+    .chapter-glyph { width: 26px; height: 26px; color: #141416; opacity: .85; }
+
+    /* Week-matrix cells (Chapter II data viz) */
+    .wm-cell { width: 100%; aspect-ratio: 1/1; border: 1px solid rgba(20,20,22,0.08); display: grid; place-items: center; font-family: 'Fraunces', serif; font-size: 10px; font-style: italic; color: rgba(20,20,22,0.55); }
+    .wm-0 { background: #EEF4EA; color: #2F6B3D; }
+    .wm-1 { background: #F1F2E2; color: #4D6B1F; }
+    .wm-2 { background: #F4EACD; color: #8A5A12; }
+    .wm-3 { background: #EFD9C4; color: #8B3B12; }
+    .wm-4 { background: #ECC9C6; color: #8B1F1F; }
+    .wm-x { background: transparent; color: rgba(20,20,22,0.25); }
+  </style>
+</head>
+
+<body class="antialiased">
+
+  <!-- ============ MASTHEAD ============ -->
+  <header class="border-b hair border-ink15 bg-paper sticky top-0 z-40 backdrop-blur-[2px]" style="background:rgba(244,239,229,0.94)">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex items-baseline justify-between gap-6">
+      <a href="#top" class="flex items-baseline gap-3">
+        <span class="display text-2xl leading-none text-ink" style="font-weight:600">PingPD</span>
+        <span class="hidden sm:inline caps text-ink55">柏金遜症每日記錄</span>
+      </a>
+      <nav class="tnav hidden md:flex items-center gap-7 text-[13.5px] text-ink70">
+        <a href="#why"      class="hover:text-ink">點解要記低</a>
+        <a href="#inside"   class="hover:text-ink">App 入面</a>
+        <a href="#pingpong" class="hover:text-ink">點解係乒乓</a>
+        <a href="#clinical" class="hover:text-ink">臨床合作</a>
+        <a href="#privacy"  class="hover:text-ink">你嘅資料</a>
+        <a href="#faq"      class="hover:text-ink">問答</a>
+      </nav>
+      <a href="#beta" class="text-[13.5px] text-ink link">登記測試 →</a>
+    </div>
+  </header>
+
+  <!-- ============ HERO ============ -->
+  <section id="top" class="pt-14 md:pt-20 pb-20 md:pb-28">
+    <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-12 gap-10 items-start">
+
+      <!-- Left rail: metadata -->
+      <aside class="md:col-span-3 text-ink70 text-sm space-y-6">
+        <div>
+          <p class="caps text-ink55">卷 01 / 號 01</p>
+          <p class="mt-1">2026 春 · 公測前預覽</p>
+        </div>
+        <hr class="hr-thin" />
+        <div class="space-y-1">
+          <p class="caps text-ink55">合作研究</p>
+          <p class="display text-[17px] leading-snug text-ink">XXXX 醫學院<br/>內科及藥物治療學系<br/>神經科</p>
+        </div>
+        <hr class="hr-thin" />
+        <div>
+          <p class="caps text-ink55">專為</p>
+          <p class="leading-relaxed">香港柏金遜症病友同照顧者而設。<br/>繁體中文（廣東話）介面。</p>
+        </div>
+      </aside>
+
+      <!-- Main hero column -->
+      <div class="md:col-span-9">
+        <h1 class="display text-ink leading-[1.12] tracking-tight text-[2.6rem] sm:text-[3.4rem] lg:text-[4.4rem]" style="font-weight:600">
+          每一次<em class="em text-clinic">記低</em>，<br/>
+          都幫得到下一次<em class="em text-clinic">覆診</em>。
+        </h1>
+
+        <p class="mt-8 max-w-2xl text-[17px] text-ink70 leading-[1.8]">
+          PingPD 用 UPDRS-8 簡化問卷，幫柏金遜症病友同屋企人喺屋企記低每日嘅震顫、動作、步態同食藥反應，配合乒乓球復康訓練，覆診嗰陣同主診醫生睇同一份數據。
+        </p>
+
+        <div class="mt-10 flex flex-wrap items-center gap-6">
+          <a href="#beta"
+             class="inline-flex items-center gap-2 bg-forest text-paper px-6 py-3.5 text-[14px] font-medium tracking-wide hover:bg-forestInk transition-colors">
+            登記加入 Beta 測試
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+          </a>
+          <a href="#inside" class="text-[14px] text-ink link">
+            先睇下 App 入面有咩
+          </a>
+        </div>
+
+        <!-- Footnote-style honest disclosure -->
+        <p class="mt-12 max-w-xl text-[12.5px] text-ink55 leading-relaxed border-l border-ink15 pl-4">
+          現時係封閉測試階段，仲未上架 App Store 同 Play Store。留低聯絡方式，我哋會邀請合資格嘅參與者安裝試用版同參與訪談。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HERO COMPANION TRIPTYCH (photo) ============ -->
+  <section class="pb-14 md:pb-24">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="fleuron mb-10" aria-hidden="true">
+        <hr/>
+        <span class="caps text-ink55">Fig. 1</span>
+        <hr/>
+      </div>
+
+      <!-- Triptych: 記錄 · 訓練 · 改善 — three photographs -->
+      <figure class="relative">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-px bg-ink/15">
+          <!-- Act I · 記錄 -->
+          <div class="relative bg-paper">
+            <div class="aspect-[4/5] overflow-hidden">
+              <img
+                src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=900&q=80"
+                srcset="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=600&q=80 600w,
+                        https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=900&q=80 900w,
+                        https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=1400&q=80 1400w"
+                sizes="(min-width:768px) 33vw, 100vw"
+                alt="年長者喺屋企坐住，手上攞住手機記錄每日狀態"
+                loading="lazy"
+                class="w-full h-full object-cover grayscale-[12%] sepia-[4%]"
+              />
+            </div>
+            <div class="absolute top-4 left-4 bg-paper/90 backdrop-blur-sm border hair border-ink15 px-3 py-1.5">
+              <p class="caps text-ink55">Act I</p>
+              <p class="display text-[1rem] leading-none mt-0.5" style="font-weight:600">記低</p>
+            </div>
+          </div>
+
+          <!-- Act II · 訓練 -->
+          <div class="relative bg-paper">
+            <div class="aspect-[4/5] overflow-hidden">
+              <img
+                src="https://images.unsplash.com/photo-1534158914592-062992fbe900?auto=format&fit=crop&w=900&q=80"
+                srcset="https://images.unsplash.com/photo-1534158914592-062992fbe900?auto=format&fit=crop&w=600&q=80 600w,
+                        https://images.unsplash.com/photo-1534158914592-062992fbe900?auto=format&fit=crop&w=900&q=80 900w,
+                        https://images.unsplash.com/photo-1534158914592-062992fbe900?auto=format&fit=crop&w=1400&q=80 1400w"
+                sizes="(min-width:768px) 33vw, 100vw"
+                alt="乒乓球枱上嘅球拍同球，等緊下一場練習"
+                loading="lazy"
+                onerror="this.onerror=null;this.src='https://loremflickr.com/900/1125/table-tennis,paddle';"
+                class="w-full h-full object-cover grayscale-[12%] sepia-[4%]"
+              />
+            </div>
+            <div class="absolute top-4 left-4 bg-paper/90 backdrop-blur-sm border hair border-ink15 px-3 py-1.5">
+              <p class="caps text-ink55">Act II</p>
+              <p class="display text-[1rem] leading-none mt-0.5" style="font-weight:600">訓練</p>
+            </div>
+          </div>
+
+          <!-- Act III · 改善 -->
+          <div class="relative bg-paper">
+            <div class="aspect-[4/5] overflow-hidden">
+              <img
+                src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=80"
+                srcset="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=600&q=80 600w,
+                        https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=80 900w,
+                        https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=1400&q=80 1400w"
+                sizes="(min-width:768px) 33vw, 100vw"
+                alt="醫生同病人睇住一份清晰嘅記錄，覆診過程更有把握"
+                loading="lazy"
+                onerror="this.onerror=null;this.src='https://loremflickr.com/900/1125/doctor,consultation';"
+                class="w-full h-full object-cover grayscale-[12%] sepia-[4%]"
+              />
+            </div>
+            <div class="absolute top-4 left-4 bg-paper/90 backdrop-blur-sm border hair border-ink15 px-3 py-1.5">
+              <p class="caps text-ink55">Act III</p>
+              <p class="display text-[1rem] leading-none mt-0.5" style="font-weight:600">改善</p>
+            </div>
+          </div>
+        </div>
+
+        <figcaption class="mt-5 text-center text-[12.5px] italic text-ink55" style="font-family:'Fraunces',serif;">
+          Fig. 1 — App 嘅三部曲：每日記低症狀，堅持訓練，覆診時同醫生睇同一份數據。
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ============ EDITION STRIP (facts, no fake stats) ============ -->
+  <section class="border-y hair border-rule/20 bg-paper2">
+    <div class="max-w-6xl mx-auto px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-8">
+      <div>
+        <p class="fig text-ink">8</p>
+        <p class="mt-2 caps text-ink55">UPDRS 範疇</p>
+        <p class="mt-1 text-[13px] text-ink70 leading-snug">震顫 · 僵硬 · 遲緩 · 步態 · 起身 · 平衡 · 寫字 · 講說</p>
+      </div>
+      <div>
+        <p class="fig text-ink">≈ 60<span class="text-[1.2rem] align-super" style="font-style:italic">s</span></p>
+        <p class="mt-2 caps text-ink55">每日記錄</p>
+        <p class="mt-1 text-[13px] text-ink70 leading-snug">一分鐘以內完成八項自我評估。</p>
+      </div>
+      <div>
+        <p class="fig text-ink">0</p>
+        <p class="mt-2 caps text-ink55">上雲資料</p>
+        <p class="mt-1 text-[13px] text-ink70 leading-snug">全部本地儲存 · Hive 加密。未經同意唔會同步。</p>
+      </div>
+      <div>
+        <p class="fig text-ink">zh-HK</p>
+        <p class="mt-2 caps text-ink55">介面語言</p>
+        <p class="mt-1 text-[13px] text-ink70 leading-snug">繁體中文 · 地道廣東話書寫。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHAPTER I: WHY ============ -->
+  <section id="why" class="py-24 md:py-32">
+    <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-12 gap-10">
+      <div class="md:col-span-3">
+        <div class="chapter-head">
+          <p class="roman text-[15px]">I.</p>
+          <!-- Clock glyph — the passage of time -->
+          <svg class="chapter-glyph" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="9.5" class="ink-line"/>
+            <line x1="12" y1="12" x2="12" y2="7" class="ink-line"/>
+            <line x1="12" y1="12" x2="16.5" y2="13.5" class="ink-line"/>
+            <circle cx="12" cy="12" r="0.9" class="ink-fill"/>
+          </svg>
+        </div>
+        <h2 class="display text-[2rem] md:text-[2.4rem] leading-tight mt-1" style="font-weight:600">點解要記低</h2>
+      </div>
+
+      <div class="md:col-span-9">
+        <!-- Lead photograph: close-up of an elderly hand — the reality of daily fluctuation -->
+        <figure class="mb-10">
+          <div class="aspect-[16/7] overflow-hidden border hair border-ink15 bg-paper2">
+            <img
+              src="https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&w=2000&q=80"
+              srcset="https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&w=1200&q=80 1200w,
+                      https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?auto=format&fit=crop&w=2000&q=80 2000w"
+              sizes="(min-width:768px) 820px, 100vw"
+              alt="一雙年長嘅手握住茶杯，象徵每日症狀嘅微小變化"
+              loading="lazy"
+              onerror="this.onerror=null;this.src='https://loremflickr.com/2000/875/elderly,hands,tea';"
+              class="w-full h-full object-cover grayscale-[15%] sepia-[3%]"
+            />
+          </div>
+          <figcaption class="mt-3 text-[12px] italic text-ink55" style="font-family:'Fraunces',serif;">
+            每日嘅震顫、僵硬、動作遲緩，往往只有病人自己最清楚。
+          </figcaption>
+        </figure>
+
+        <div class="max-w-[62ch] text-[17.5px] text-ink leading-[1.85] space-y-6">
+          <p class="drop-cap">柏金遜症嘅症狀每日唔同、每個鐘頭都唔一樣。食藥前同食藥後、開期同關期，差別可以好大。覆診嗰十五分鐘，病人要靠記性講返過去成季嘅變化，好難全面。</p>
+          <p>記低嘅目的，唔係同個病鬥——係畀你同主診醫生，喺覆診嗰陣睇到<em class="em text-clinic">真相</em>：邊個藥物時段最平穩、邊日運動之後特別輕鬆、邊段時間突然多咗跌倒。</p>
+          <p>而家市面嘅紙本日誌太鎖碎，一般健康 app 又冇臨床度量。PingPD 取兩者之長：十秒一項嘅 UPDRS-8 滑桿，加上為長者手部震顫而設嘅 48 dp 按鈕、16 sp 最低字體、WCAG AA 對比度。</p>
+        </div>
+
+        <figure class="mt-14 border-l-2 border-rust pl-6 max-w-[54ch]">
+          <blockquote class="display text-[1.5rem] md:text-[1.85rem] leading-[1.45] text-ink" style="font-weight:500">
+            &ldquo;長期、穩定嘅自我記錄，係柏金遜症治療嘅重要一環。佢令病人同屋企人喺兩次覆診之間，都唔係空白嘅。&rdquo;
+          </blockquote>
+          <figcaption class="mt-4 text-[13.5px] text-ink70">
+            <span class="display text-ink" style="font-weight:600">XXXX 醫生</span> · XXXX 醫學院 內科及藥物治療學系 · 神經科
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHAPTER II: INSIDE THE APP ============ -->
+  <section id="inside" class="border-t hair border-ink15 bg-paper2 py-24 md:py-32">
+    <div class="max-w-6xl mx-auto px-6">
+
+      <!-- Section head -->
+      <div class="grid md:grid-cols-12 gap-10 mb-16 md:mb-20">
+        <div class="md:col-span-3">
+          <div class="chapter-head">
+            <p class="roman text-[15px]">II.</p>
+            <!-- Phone glyph -->
+            <svg class="chapter-glyph" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="6" y="3" width="12" height="18" rx="2" class="ink-line"/>
+              <line x1="9.5" y1="18.5" x2="14.5" y2="18.5" class="ink-line"/>
+              <line x1="8.5" y1="6.5" x2="15.5" y2="6.5" class="ink-line-thin"/>
+            </svg>
+          </div>
+          <h2 class="display text-[2rem] md:text-[2.4rem] leading-tight mt-1" style="font-weight:600">App 入面</h2>
+        </div>
+        <p class="md:col-span-6 text-[16px] text-ink70 leading-[1.8] max-w-[54ch]">
+          四個核心畫面：主頁、症狀記錄、訓練日誌、進度圖。下圖係實際嘅介面捕捉——字體、間距、顏色，都係照病友同職業治療師嘅意見調過。
+        </p>
+        <div class="md:col-span-3 text-[13px] text-ink55 leading-relaxed md:self-end md:text-right">
+          <p class="caps">版本</p>
+          <p class="mt-1">0.4 · Beta · iOS 及 Android</p>
+        </div>
+      </div>
+
+      <!-- 3 flat screenshots -->
+      <div class="grid md:grid-cols-3 gap-x-8 gap-y-14">
+
+        <!-- Screen 1 — Dashboard -->
+        <figure>
+          <div class="screen aspect-[9/16] overflow-hidden flex flex-col ui text-ink">
+            <div class="pt-7 pb-2 px-4 flex items-center justify-between text-[10px] font-semibold text-ink70">
+              <span>9:41</span>
+              <span>􀙇 􀝒 􀛨</span>
+            </div>
+            <div class="px-4 pt-1">
+              <p class="text-[11px] text-ink55">午安，陳生</p>
+              <p class="text-[15px] font-semibold">今日有冇嘢想記低？</p>
+            </div>
+            <!-- Today card — flat, clinical -->
+            <div class="mx-4 mt-3 p-3.5 bg-clinic text-paper border border-clinic">
+              <p class="text-[9px] tracking-caps opacity-80">今日整體狀態</p>
+              <p class="mt-1 display text-[1.75rem] leading-none" style="font-weight:500">1.3<span class="text-[0.8rem] opacity-75">&nbsp;/&nbsp;4</span></p>
+              <p class="mt-1 text-[10.5px] opacity-85">比上星期輕微改善</p>
+              <!-- mini sparkline -->
+              <svg class="mt-3 w-full h-9" viewBox="0 0 200 36" preserveAspectRatio="none">
+                <polyline points="0,26 25,20 50,28 75,18 100,22 125,12 150,16 175,10 200,14" fill="none" stroke="#F4EFE5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <!-- quick actions -->
+            <div class="mx-4 mt-3 grid grid-cols-2 gap-2">
+              <div class="p-2.5 border border-ink15 bg-paper">
+                <div class="w-7 h-7 grid place-items-center bg-ink text-paper mb-1.5">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                </div>
+                <p class="text-[11px] font-semibold leading-tight">記錄症狀</p>
+                <p class="text-[9.5px] text-ink55">UPDRS-8</p>
+              </div>
+              <div class="p-2.5 border border-ink15 bg-paper">
+                <div class="w-7 h-7 grid place-items-center bg-forest text-paper mb-1.5">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/></svg>
+                </div>
+                <p class="text-[11px] font-semibold leading-tight">乒乓球訓練</p>
+                <p class="text-[9.5px] text-ink55">今日目標 20 分鐘</p>
+              </div>
+            </div>
+            <!-- recent -->
+            <div class="px-4 mt-3">
+              <p class="caps text-ink55" style="font-size:8.5px">最近記錄</p>
+              <div class="mt-1.5 space-y-1.5">
+                <div class="flex items-center justify-between py-1.5 border-b border-ink10">
+                  <div class="flex items-center gap-2">
+                    <span class="sev-pill sev-1">1</span>
+                    <div>
+                      <p class="text-[11px] font-semibold leading-tight">震顫 · 輕微</p>
+                      <p class="text-[9.5px] text-ink55">今朝 08:15</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between py-1.5 border-b border-ink10">
+                  <div class="flex items-center gap-2">
+                    <span class="sev-pill sev-2">2</span>
+                    <div>
+                      <p class="text-[11px] font-semibold leading-tight">步態 · 中度</p>
+                      <p class="text-[9.5px] text-ink55">尋日 19:40</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between py-1.5">
+                  <div class="flex items-center gap-2">
+                    <span class="sev-pill sev-0">0</span>
+                    <div>
+                      <p class="text-[11px] font-semibold leading-tight">寫字 · 冇影響</p>
+                      <p class="text-[9.5px] text-ink55">尋日 11:02</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="mt-auto border-t border-ink10 py-2.5 flex items-center justify-around text-[9px]">
+              <span class="text-ink" style="font-weight:600">主頁</span>
+              <span class="text-ink40">進度</span>
+              <span class="text-ink40">設定</span>
+            </div>
+          </div>
+          <p class="mt-5 roman text-[14px]">i.</p>
+          <h3 class="display text-[1.35rem] mt-0.5" style="font-weight:600">主頁 · Dashboard</h3>
+          <p class="mt-2 text-[14.5px] text-ink70 leading-[1.7] max-w-[38ch]">
+            一眼睇清今日整體分數、最近三條記錄，同每日訓練目標。開始一次記錄或者一次練習都由呢度出發。
+          </p>
+        </figure>
+
+        <!-- Screen 2 — UPDRS-8 symptom log -->
+        <figure>
+          <div class="screen aspect-[9/16] overflow-hidden flex flex-col ui text-ink">
+            <div class="pt-7 pb-2 px-4 flex items-center justify-between text-[10px] font-semibold text-ink70">
+              <span>9:42</span>
+              <span>􀙇 􀝒 􀛨</span>
+            </div>
+            <div class="px-4 pt-1 flex items-center justify-between">
+              <button class="text-[12px] text-ink55">←</button>
+              <p class="text-[12.5px] font-semibold">記錄症狀</p>
+              <span class="text-[10px] text-ink55">3 / 8</span>
+            </div>
+
+            <div class="px-4 mt-4">
+              <p class="caps text-ink55" style="font-size:8.5px">動作範疇</p>
+              <h4 class="display text-[1.05rem] mt-1" style="font-weight:600">手部震顫</h4>
+              <p class="text-[11px] text-ink70 mt-1 leading-snug">過去半日，你嘅手係咪有唔自主嘅震動？</p>
+            </div>
+
+            <!-- Score slider -->
+            <div class="mx-4 mt-4 p-3 border border-ink15 bg-paper">
+              <div class="flex items-end justify-between">
+                <div>
+                  <p class="caps text-ink55" style="font-size:8px">目前分數</p>
+                  <p class="display text-[2rem] leading-none mt-1" style="font-weight:500">2</p>
+                </div>
+                <span class="sev-pill sev-2">中度</span>
+              </div>
+              <!-- track -->
+              <div class="mt-3 relative">
+                <div class="h-[6px] bg-ink10"></div>
+                <div class="absolute top-0 left-0 h-[6px] bg-clinic" style="width:50%"></div>
+                <div class="absolute -top-[5px]" style="left:calc(50% - 8px)">
+                  <div class="w-4 h-4 rounded-full bg-ink border-2 border-paper"></div>
+                </div>
+              </div>
+              <div class="mt-3 flex items-center justify-between text-[10px] text-ink55">
+                <span>0 · 冇</span>
+                <span>1</span>
+                <span class="text-ink font-semibold">2 · 中</span>
+                <span>3</span>
+                <span>4 · 嚴重</span>
+              </div>
+            </div>
+
+            <!-- Choice chips -->
+            <div class="px-4 mt-4">
+              <p class="caps text-ink55" style="font-size:8.5px">出現邊邊</p>
+              <div class="mt-2 flex flex-wrap gap-1.5">
+                <span class="text-[11px] px-2.5 py-1 border border-ink40 bg-ink text-paper">左手</span>
+                <span class="text-[11px] px-2.5 py-1 border border-ink15 text-ink70">右手</span>
+                <span class="text-[11px] px-2.5 py-1 border border-ink15 text-ink70">雙手</span>
+                <span class="text-[11px] px-2.5 py-1 border border-ink15 text-ink70">冇</span>
+              </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="px-4 mt-4">
+              <p class="caps text-ink55" style="font-size:8.5px">備註（選填）</p>
+              <div class="mt-1.5 h-14 border border-ink15 bg-paper p-2 text-[10.5px] text-ink70">
+                食咗第二粒藥之後，大約十分鐘就明顯鬆返…
+              </div>
+            </div>
+
+            <div class="mt-auto px-4 pb-4 pt-3 border-t border-ink10">
+              <button class="w-full py-2.5 bg-forest text-paper text-[12px] font-medium">下一項 →</button>
+            </div>
+          </div>
+          <p class="mt-5 roman text-[14px]">ii.</p>
+          <h3 class="display text-[1.35rem] mt-0.5" style="font-weight:600">症狀 · UPDRS-8</h3>
+          <p class="mt-2 text-[14.5px] text-ink70 leading-[1.7] max-w-[38ch]">
+            八個範疇，0 至 4 分滑桿。滑桿嘅 tick 同數字都可以㩒——震顫嘅手都撳得中。全程可以用廣東話語音讀出。
+          </p>
+        </figure>
+
+        <!-- Screen 3 — Progress chart -->
+        <figure>
+          <div class="screen aspect-[9/16] overflow-hidden flex flex-col ui text-ink">
+            <div class="pt-7 pb-2 px-4 flex items-center justify-between text-[10px] font-semibold text-ink70">
+              <span>9:43</span>
+              <span>􀙇 􀝒 􀛨</span>
+            </div>
+            <div class="px-4 pt-1">
+              <p class="caps text-ink55" style="font-size:8.5px">過去 6 個月</p>
+              <p class="display text-[1.1rem] mt-0.5" style="font-weight:600">整體症狀趨勢</p>
+            </div>
+
+            <!-- Big chart -->
+            <div class="mx-4 mt-3 p-2.5 border border-ink15 bg-paper">
+              <div class="flex items-center justify-between text-[9.5px] text-ink55">
+                <span class="display text-ink text-[1rem]" style="font-weight:600">1.8<span class="text-[0.7rem]"> /4</span></span>
+                <div class="flex items-center gap-1">
+                  <button class="px-1.5 py-0.5 bg-ink text-paper">月</button>
+                  <button class="px-1.5 py-0.5">週</button>
+                  <button class="px-1.5 py-0.5">年</button>
+                </div>
+              </div>
+              <svg class="mt-2 w-full" viewBox="0 0 260 120" preserveAspectRatio="none">
+                <g stroke="rgba(20,20,22,0.08)" stroke-dasharray="2 3">
+                  <line x1="0" y1="30" x2="260" y2="30"/>
+                  <line x1="0" y1="60" x2="260" y2="60"/>
+                  <line x1="0" y1="90" x2="260" y2="90"/>
+                </g>
+                <path d="M10,72 C40,60 60,80 90,62 S140,36 180,48 S220,68 250,34" fill="none" stroke="#0D5E6F" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                <!-- points -->
+                <g fill="#0D5E6F">
+                  <circle cx="90"  cy="62" r="2"/>
+                  <circle cx="180" cy="48" r="2"/>
+                  <circle cx="250" cy="34" r="2.4"/>
+                </g>
+                <!-- x-axis ticks -->
+                <g fill="rgba(20,20,22,0.42)" font-size="7" font-family="Fraunces,serif" font-style="italic">
+                  <text x="8"   y="114">11</text>
+                  <text x="52"  y="114">12</text>
+                  <text x="94"  y="114">1</text>
+                  <text x="138" y="114">2</text>
+                  <text x="180" y="114">3</text>
+                  <text x="230" y="114">4</text>
+                </g>
+              </svg>
+            </div>
+
+            <!-- Small facts row -->
+            <div class="mx-4 mt-3 grid grid-cols-3 gap-2 text-center">
+              <div class="py-1.5 border border-ink15 bg-paper">
+                <p class="caps text-ink55" style="font-size:7.5px">平均</p>
+                <p class="display text-[13px] mt-0.5" style="font-weight:600">1.8</p>
+              </div>
+              <div class="py-1.5 border border-ink15 bg-paper">
+                <p class="caps text-ink55" style="font-size:7.5px">訓練日</p>
+                <p class="display text-[13px] mt-0.5" style="font-weight:600">132</p>
+              </div>
+              <div class="py-1.5 border border-ink15 bg-paper">
+                <p class="caps text-ink55" style="font-size:7.5px">連續</p>
+                <p class="display text-[13px] mt-0.5" style="font-weight:600">12日</p>
+              </div>
+            </div>
+
+            <!-- Insight card -->
+            <div class="mx-4 mt-3 p-2.5 bg-clinicLight border border-clinic/30">
+              <p class="caps text-clinic" style="font-size:8px">觀察</p>
+              <p class="mt-1 text-[11px] leading-snug text-ink">星期三、五打乒乓球之後，翌日早上嘅震顫分數平均低 0.4 分。</p>
+            </div>
+
+            <div class="mt-auto px-4 pb-4 pt-3 border-t border-ink10 flex gap-2">
+              <button class="flex-1 py-2 border border-ink15 text-[11px]">匯出 PDF</button>
+              <button class="flex-1 py-2 bg-ink text-paper text-[11px]">畀醫生睇</button>
+            </div>
+          </div>
+          <p class="mt-5 roman text-[14px]">iii.</p>
+          <h3 class="display text-[1.35rem] mt-0.5" style="font-weight:600">進度 · Trend</h3>
+          <p class="mt-2 text-[14.5px] text-ink70 leading-[1.7] max-w-[38ch]">
+            週、月、年三種時段。可以匯出 PDF 或喺屏幕上直接畀醫生睇。App 仲會指出可能嘅規律（食藥時段、訓練日效果）。
+          </p>
+        </figure>
+      </div>
+
+      <!-- Feature Index (a real table — instantly non-AI) -->
+      <div class="mt-24 md:mt-28 grid md:grid-cols-12 gap-10">
+        <div class="md:col-span-3">
+          <p class="caps text-ink55">功能索引</p>
+          <p class="display text-[1.4rem] mt-1 leading-snug" style="font-weight:600">所有喺 MVP<br/>入面嘅嘢</p>
+        </div>
+        <dl class="md:col-span-9 index text-[15px] grid md:grid-cols-2 gap-x-10">
+          <div>
+            <dt>UPDRS-8 簡化評估</dt>
+            <dd class="text-ink70">0–4 分滑桿、震顫／僵硬／遲緩／步態／平衡／起身／寫字／講說。</dd>
+            <dt>食藥時間表</dt>
+            <dd class="text-ink70">多個時段、不同劑量；藥效感受即場回饋。</dd>
+            <dt>乒乓球訓練記錄</dt>
+            <dd class="text-ink70">時長、強度、疲勞感、連續日數火花追蹤。</dd>
+          </div>
+          <div>
+            <dt>長期趨勢圖</dt>
+            <dd class="text-ink70">週／月／年切換，開關期規律自動標示。</dd>
+            <dt>PDF 覆診報告</dt>
+            <dd class="text-ink70">一鍵匯出，AI 自動整理成三頁可打印版本。</dd>
+            <dt>本地加密儲存</dt>
+            <dd class="text-ink70">Hive + AES。可手動匯出備份、一鍵完全刪除。</dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHAPTER III: WHY PING PONG ============ -->
+  <section id="pingpong" class="py-24 md:py-32">
+
+    <!-- Full-width editorial photograph: ping pong match in motion -->
+    <div class="max-w-6xl mx-auto px-6 mb-16 md:mb-24">
+      <figure>
+        <div class="relative aspect-[21/9] overflow-hidden border hair border-ink15 bg-paper2">
+          <img
+            src="https://images.unsplash.com/photo-1611251135345-97b013068e79?auto=format&fit=crop&w=2000&q=80"
+            srcset="https://images.unsplash.com/photo-1611251135345-97b013068e79?auto=format&fit=crop&w=1200&q=80 1200w,
+                    https://images.unsplash.com/photo-1611251135345-97b013068e79?auto=format&fit=crop&w=2000&q=80 2000w,
+                    https://images.unsplash.com/photo-1611251135345-97b013068e79?auto=format&fit=crop&w=2800&q=80 2800w"
+            sizes="(min-width:768px) 1100px, 100vw"
+            alt="乒乓球比賽嘅動態一刻，球拍接觸球嘅瞬間"
+            loading="lazy"
+            onerror="this.onerror=null;this.src='https://loremflickr.com/2000/857/table-tennis,match,rally';"
+            class="w-full h-full object-cover grayscale-[10%]"
+          />
+          <!-- Benefit chips overlaid at bottom -->
+          <div class="absolute left-0 right-0 bottom-0 p-5 md:p-7 bg-gradient-to-t from-ink/75 via-ink/35 to-transparent">
+            <div class="flex flex-wrap gap-2 md:gap-3">
+              <span class="caps text-paper bg-ink/55 backdrop-blur-sm border border-paper/25 px-3 py-1.5">節奏感 · 縮短反應時間</span>
+              <span class="caps text-paper bg-ink/55 backdrop-blur-sm border border-paper/25 px-3 py-1.5">手眼協調 · 動作起步</span>
+              <span class="caps text-paper bg-ink/55 backdrop-blur-sm border border-paper/25 px-3 py-1.5">雙側運用 · 平衡</span>
+              <span class="caps text-paper bg-ink/55 backdrop-blur-sm border border-paper/25 px-3 py-1.5">社交 · 情緒支援</span>
+            </div>
+          </div>
+        </div>
+        <figcaption class="mt-5 text-center text-[12.5px] italic text-ink55" style="font-family:'Fraunces',serif;">
+          Fig. 2 — 乒乓球結合快速節奏、手眼協調、雙側運用同社交，針對柏金遜症嘅核心缺損。
+        </figcaption>
+      </figure>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-12 gap-10">
+      <div class="md:col-span-3">
+        <div class="chapter-head">
+          <p class="roman text-[15px]">III.</p>
+          <!-- Paddle glyph -->
+          <svg class="chapter-glyph" viewBox="0 0 24 24" aria-hidden="true">
+            <ellipse cx="10" cy="10" rx="6" ry="7" class="ink-line"/>
+            <line x1="14" y1="14" x2="19" y2="19" class="ink-line"/>
+            <circle cx="20.2" cy="5.5" r="1.4" class="ink-fill"/>
+          </svg>
+        </div>
+        <h2 class="display text-[2rem] md:text-[2.4rem] leading-tight mt-1" style="font-weight:600">點解係<br/>乒乓球</h2>
+      </div>
+
+      <div class="md:col-span-9 max-w-[62ch] text-[17.5px] text-ink leading-[1.85] space-y-6">
+        <p class="drop-cap">2020 年 XXXX 大學一項先導研究追蹤咗 12 位柏金遜症病人做咗六個月每週一次乒乓球課程<sup><a href="#ref-1" class="link text-ink55">[1]</a></sup>。六個月後，佢哋嘅 UPDRS 動作分數、穿衣、講說、起床流暢度都有明顯進步。</p>
+        <p>乒乓球結合幾樣對柏金遜症好重要嘅元素：<em class="em text-clinic">快速節奏</em>迫你縮短反應時間、<em class="em text-clinic">手眼協調</em>幫助動作起步、<em class="em text-clinic">雙側運用</em>改善左右半身協調、<em class="em text-clinic">社交</em>元素減低抑鬱同孤獨感，加上輕度帶氧——啱啱好係針對性訓練。</p>
+
+        <p>PingPD 唔會教你揮拍。App 嘅角色係<em class="em text-clinic">陪住你堅持</em>：記低每次練習時長、強度（輕／中／重）、打完之後嘅感受，然後同你嘅 UPDRS-8 記錄叠在一齊，睇下幾日內嘅身體變化。</p>
+
+        <aside class="mt-8 p-5 border hair border-ink15 bg-paper2">
+          <p class="caps text-ink55">冷知識</p>
+          <p class="mt-2 text-[15px] text-ink70 leading-relaxed">
+            2019 年，日本 XXXX 柏金遜症互助會開辦全國首個乒乓球治療班，由 XXXX 教授主理——之後呢個模式傳到美國、澳洲、新加坡多間社區醫院。香港現時仲未有正式嘅乒乓治療項目。
+          </p>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHAPTER IV: PRIVACY ============ -->
+  <section id="privacy" class="border-t hair border-ink15 bg-paper2 py-24 md:py-32">
+    <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-12 gap-10">
+      <div class="md:col-span-3">
+        <div class="chapter-head">
+          <p class="roman text-[15px]">IV.</p>
+          <!-- Lock glyph -->
+          <svg class="chapter-glyph" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="5" y="10.5" width="14" height="10" rx="1.5" class="ink-line"/>
+            <path d="M8 10.5 V7.5 a4 4 0 0 1 8 0 V10.5" class="ink-line"/>
+            <circle cx="12" cy="15.5" r="1.3" class="ink-fill"/>
+          </svg>
+        </div>
+        <h2 class="display text-[2rem] md:text-[2.4rem] leading-tight mt-1" style="font-weight:600">你部機<br/>嘅事</h2>
+      </div>
+      <div class="md:col-span-9">
+        <div class="max-w-[62ch] text-[17.5px] text-ink leading-[1.85] space-y-6">
+          <p>
+            所有記錄都只存喺你部機度，用 Hive 加密格式寫入。
+            <em class="em text-clinic">唔會</em>同步去雲端，
+            <em class="em text-clinic">唔會</em>交畀研究團隊（包括 XXXX），
+            <em class="em text-clinic">唔會</em>用作廣告投放。
+          </p>
+          <p>
+            你可以隨時將資料<span class="link">匯出成 JSON</span>或者 PDF 存到自己嘅雲端（iCloud / Google Drive），或者喺「設定 → 資料」入面一鍵完全清除。
+          </p>
+        </div>
+
+        <!-- Photograph aside: a phone in hand, grounding the "stays with you" message -->
+        <figure class="mt-14">
+          <div class="relative aspect-[21/8] overflow-hidden border hair border-ink15 bg-paper2">
+            <img
+              src="https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=2000&q=80"
+              srcset="https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=1200&q=80 1200w,
+                      https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=2000&q=80 2000w,
+                      https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=2800&q=80 2800w"
+              sizes="(min-width:768px) 1100px, 100vw"
+              alt="一部手機留喺手掌心，代表所有資料只留喺你部機度"
+              loading="lazy"
+              onerror="this.onerror=null;this.src='https://loremflickr.com/2000/760/phone,hand,privacy';"
+              class="w-full h-full object-cover grayscale-[10%]"
+            />
+            <!-- Overlay pull-quote -->
+            <div class="absolute inset-0 bg-gradient-to-r from-ink/70 via-ink/35 to-transparent flex items-center">
+              <div class="max-w-md ml-6 md:ml-12 text-paper">
+                <p class="caps text-paper/70">Principle №1</p>
+                <p class="display text-[1.6rem] md:text-[2.1rem] leading-[1.25] mt-2" style="font-weight:600">
+                  只有你，<br/>先睇到自己嘅記錄。
+                </p>
+                <p class="mt-3 text-[13.5px] text-paper/80 leading-relaxed">默認：零上雲、零共享、零廣告。</p>
+              </div>
+            </div>
+          </div>
+          <figcaption class="mt-4 text-center text-[12.5px] italic text-ink55" style="font-family:'Fraunces',serif;">
+            Fig. 3 — 所有資料只寫入你部機嘅 Hive Box；未經你同意，唔會去到任何地方。
+          </figcaption>
+        </figure>
+
+        <!-- Privacy table -->
+        <div class="mt-14 overflow-x-auto">
+          <table class="w-full text-[14.5px] border-collapse">
+            <thead>
+              <tr class="text-left border-b border-ink">
+                <th class="py-3 pr-6 caps text-ink55 font-semibold">資料類型</th>
+                <th class="py-3 pr-6 caps text-ink55 font-semibold">存放位置</th>
+                <th class="py-3 pr-6 caps text-ink55 font-semibold">加密</th>
+                <th class="py-3 caps text-ink55 font-semibold">會共享嗎？</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-ink15">
+              <tr>
+                <td class="py-4 pr-6 text-ink">UPDRS-8 症狀記錄</td>
+                <td class="py-4 pr-6 text-ink70">你部機 · Hive Box</td>
+                <td class="py-4 pr-6 text-ink70">AES-256</td>
+                <td class="py-4 text-ink">否 — 除非你匯出 PDF</td>
+              </tr>
+              <tr>
+                <td class="py-4 pr-6 text-ink">食藥提醒時間表</td>
+                <td class="py-4 pr-6 text-ink70">你部機 · Hive Box</td>
+                <td class="py-4 pr-6 text-ink70">AES-256</td>
+                <td class="py-4 text-ink">否</td>
+              </tr>
+              <tr>
+                <td class="py-4 pr-6 text-ink">乒乓球訓練記錄</td>
+                <td class="py-4 pr-6 text-ink70">你部機 · Hive Box</td>
+                <td class="py-4 pr-6 text-ink70">AES-256</td>
+                <td class="py-4 text-ink">否</td>
+              </tr>
+              <tr>
+                <td class="py-4 pr-6 text-ink">裝置匿名崩潰報告</td>
+                <td class="py-4 pr-6 text-ink70">Flutter crashlytics（可關閉）</td>
+                <td class="py-4 pr-6 text-ink70">TLS</td>
+                <td class="py-4 text-ink">僅錯誤堆疊 · 無用戶資料</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="mt-8 text-[13.5px] text-ink55 leading-relaxed max-w-[62ch]">
+          將來如果 PingPD 推出「畀主診醫生查閱」功能，會完全採用 opt-in 模式——你必須喺設定入面逐項打開，先會有加密端對端分享。默認仍然係<strong>零分享</strong>。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHAPTER V: CLINICAL COLLABORATION ============ -->
+  <section id="clinical" class="py-24 md:py-32">
+    <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-12 gap-10">
+      <div class="md:col-span-3">
+        <div class="chapter-head">
+          <p class="roman text-[15px]">V.</p>
+          <!-- Stethoscope glyph -->
+          <svg class="chapter-glyph" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 3 V10 a4 4 0 0 0 8 0 V3" class="ink-line"/>
+            <path d="M9 14 V16 a5 5 0 0 0 8.5 3.5" class="ink-line"/>
+            <circle cx="19" cy="16.5" r="2.4" class="ink-line"/>
+          </svg>
+        </div>
+        <h2 class="display text-[2rem] md:text-[2.4rem] leading-tight mt-1" style="font-weight:600">臨床合作</h2>
+      </div>
+      <div class="md:col-span-9">
+        <div class="max-w-[62ch] text-[17.5px] text-ink leading-[1.85] space-y-4">
+          <p>PingPD 係同<span class="display text-ink" style="font-weight:600">XXXX 醫學院 內科及藥物治療學系 · 神經科</span>合作嘅研究項目。臨床顧問負責審核 UPDRS 問卷本地化、推介 outcome 指標、以及一年期嘅用戶研究。</p>
+        </div>
+
+        <!-- Advisor card -->
+        <div class="mt-10 flex flex-col sm:flex-row gap-6 border-t hair border-ink15 pt-8">
+          <div class="w-32 h-32 overflow-hidden border hair border-ink15 bg-paper2 shrink-0">
+            <img
+              src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=400&q=80"
+              srcset="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=300&q=80 300w,
+                      https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=500&q=80 500w"
+              sizes="128px"
+              alt="臨床顧問肖像（佔位圖）"
+              loading="lazy"
+              onerror="this.onerror=null;this.src='https://loremflickr.com/400/400/doctor,portrait';"
+              class="w-full h-full object-cover grayscale-[20%]"
+            />
+          </div>
+          <div>
+            <p class="caps text-ink55">臨床顧問</p>
+            <p class="display text-[1.6rem] mt-1.5" style="font-weight:600">XXXX 醫生 <span class="text-ink55 text-[1rem] font-normal">Dr. XXXX</span></p>
+            <p class="mt-2 text-[14.5px] text-ink70 leading-relaxed max-w-[52ch]">
+              XXXX 醫學院 神經科 顧問醫生。臨床專長包括柏金遜症、動作障礙症、深腦刺激術前後管理。本項目負責 UPDRS-8 本地化同臨床 outcome 指標設計。
+            </p>
+            <p class="mt-3 text-[13px] text-ink55">
+              <a href="mailto:clinical@pingpd.hk" class="link">clinical@pingpd.hk</a>
+              &nbsp;·&nbsp;
+              <a href="#" class="link">XXXX 神經科主頁</a>
+            </p>
+          </div>
+        </div>
+
+        <!-- References -->
+        <aside class="mt-14 p-6 bg-paper2 border hair border-ink15">
+          <p class="caps text-ink55">參考資料 · References</p>
+          <ol class="mt-4 space-y-3 text-[13.5px] text-ink70 leading-relaxed">
+            <li id="ref-1">
+              <span class="display text-ink" style="font-weight:600">[1]</span>
+              XXXX et al. <em class="em">Table Tennis Exercise for Parkinson's Disease: A Pilot Study.</em>
+              XXXX University School of Medicine. <em>XXXX Neurology</em>, 2020.
+            </li>
+            <li id="ref-2">
+              <span class="display text-ink" style="font-weight:600">[2]</span>
+              XXXX Society. <em class="em">MDS-UPDRS Rating Scale.</em> 1987 revision.
+            </li>
+            <li id="ref-3">
+              <span class="display text-ink" style="font-weight:600">[3]</span>
+              XXXX. <em class="em">柏金遜症資料手冊.</em> 2024 年修訂版.
+            </li>
+          </ol>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHAPTER VI: BETA SIGN-UP ============ -->
+  <section id="beta" class="border-t hair border-ink15 bg-ink text-paper">
+    <div class="max-w-6xl mx-auto px-6 py-24 md:py-32 grid md:grid-cols-12 gap-10 items-start">
+      <div class="md:col-span-3">
+        <div class="chapter-head">
+          <p class="roman text-[15px] text-paper/50">VI.</p>
+          <!-- Envelope glyph (on dark bg) -->
+          <svg class="chapter-glyph" viewBox="0 0 24 24" aria-hidden="true" style="color:#F4EFE5;opacity:.85">
+            <rect x="3.5" y="6" width="17" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M4 7 L12 13 L20 7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2 class="display text-[2rem] md:text-[2.4rem] leading-tight mt-1" style="font-weight:600">登記做<br/>早期用家</h2>
+      </div>
+
+      <div class="md:col-span-9 max-w-[62ch]">
+        <p class="text-[17.5px] leading-[1.85] text-paper/85">
+          MVP 階段完全免費、冇廣告、冇內購。留低聯絡方式，我哋會喺兩星期內安排一次電話訪談（或者直接面見），然後 TestFlight / 內測連結就會 email 畀你。
+        </p>
+
+        <!-- Form: newsroom-style -->
+        <form class="mt-10 grid gap-5" onsubmit="event.preventDefault();document.getElementById('beta-ok').classList.remove('hidden');this.reset();">
+          <div class="grid sm:grid-cols-2 gap-5">
+            <label class="block">
+              <span class="caps text-paper/55">姓名（如 · 陳生）</span>
+              <input type="text" required
+                class="mt-2 w-full bg-transparent border-b border-paper/30 focus:border-paper outline-none py-2 text-[16px] text-paper placeholder-paper/30" placeholder="陳大文" />
+            </label>
+            <label class="block">
+              <span class="caps text-paper/55">電郵</span>
+              <input type="email" required
+                class="mt-2 w-full bg-transparent border-b border-paper/30 focus:border-paper outline-none py-2 text-[16px] text-paper placeholder-paper/30" placeholder="you@example.com" />
+            </label>
+          </div>
+
+          <fieldset class="mt-2">
+            <legend class="caps text-paper/55">你嘅身份</legend>
+            <div class="mt-3 grid sm:grid-cols-3 gap-2 text-[14px]">
+              <label class="flex items-center gap-2 border border-paper/25 px-3 py-2 cursor-pointer hover:border-paper/60">
+                <input type="radio" name="role" value="patient" class="accent-paper" />
+                <span>柏金遜症病友</span>
+              </label>
+              <label class="flex items-center gap-2 border border-paper/25 px-3 py-2 cursor-pointer hover:border-paper/60">
+                <input type="radio" name="role" value="caregiver" class="accent-paper" />
+                <span>屋企人／照顧者</span>
+              </label>
+              <label class="flex items-center gap-2 border border-paper/25 px-3 py-2 cursor-pointer hover:border-paper/60">
+                <input type="radio" name="role" value="clinician" class="accent-paper" />
+                <span>醫護／治療師</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <label class="block">
+            <span class="caps text-paper/55">想同我哋講句嘢？（選填）</span>
+            <textarea rows="3"
+              class="mt-2 w-full bg-transparent border border-paper/25 focus:border-paper outline-none p-3 text-[15px] text-paper placeholder-paper/30" placeholder="好似確診幾年、而家用緊咩方法、覆診醫院…"></textarea>
+          </label>
+
+          <div class="flex flex-wrap items-center gap-6 mt-2">
+            <button type="submit"
+              class="inline-flex items-center gap-2 bg-paper text-ink px-6 py-3 text-[14px] font-medium tracking-wide hover:bg-white transition-colors">
+              送出登記
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+            </button>
+            <span class="text-[13px] text-paper/55">或者 email 去 <a href="mailto:hello@pingpd.hk" class="link">hello@pingpd.hk</a></span>
+          </div>
+
+          <p id="beta-ok" class="hidden mt-2 text-[13.5px] text-paper bg-forest/30 border border-forest/50 p-3">
+            多謝 ✓ 我哋會喺兩星期內同你聯絡。
+          </p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CHAPTER VII: FAQ ============ -->
+  <section id="faq" class="py-24 md:py-32">
+    <div class="max-w-6xl mx-auto px-6 grid md:grid-cols-12 gap-10">
+      <div class="md:col-span-3">
+        <div class="chapter-head">
+          <p class="roman text-[15px]">VII.</p>
+          <!-- Speech bubble glyph -->
+          <svg class="chapter-glyph" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 5.5 H20 V16 H13 L9 20 V16 H4 Z" class="ink-line"/>
+            <circle cx="9" cy="10.5" r="0.9" class="ink-fill"/>
+            <circle cx="12" cy="10.5" r="0.9" class="ink-fill"/>
+            <circle cx="15" cy="10.5" r="0.9" class="ink-fill"/>
+          </svg>
+        </div>
+        <h2 class="display text-[2rem] md:text-[2.4rem] leading-tight mt-1" style="font-weight:600">問答</h2>
+      </div>
+
+      <dl class="md:col-span-9 divide-y divide-ink15 border-y border-ink">
+        <details class="group">
+          <summary class="flex items-start justify-between gap-6 py-6 cursor-pointer list-none">
+            <span class="display text-[1.15rem] text-ink" style="font-weight:600">邊啲人適合用 PingPD？</span>
+            <span class="shrink-0 mt-1 text-ink55 group-open:rotate-45 transition-transform duration-200">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 5v14M5 12h14"/></svg>
+            </span>
+          </summary>
+          <div class="pb-6 text-[15px] text-ink70 leading-[1.8] max-w-[62ch]">
+            主要係已確診早期至中期柏金遜症嘅人士，以及屋企人／照顧者。即使手有輕度至中度震顫、反應較慢，都可以用 — 界面按鈕大過 48×48 dp，字體最細 16 sp。晚期或者完全無法自理嘅患者，建議由照顧者幫手記錄。
+          </div>
+        </details>
+
+        <details class="group">
+          <summary class="flex items-start justify-between gap-6 py-6 cursor-pointer list-none">
+            <span class="display text-[1.15rem] text-ink" style="font-weight:600">需要上網先可以用？</span>
+            <span class="shrink-0 mt-1 text-ink55 group-open:rotate-45 transition-transform duration-200">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 5v14M5 12h14"/></svg>
+            </span>
+          </summary>
+          <div class="pb-6 text-[15px] text-ink70 leading-[1.8] max-w-[62ch]">
+            唔使。所有記錄、提醒、圖表都離線運作。只有第一次下載 App 同匯出 PDF 報告先需要網絡。
+          </div>
+        </details>
+
+        <details class="group">
+          <summary class="flex items-start justify-between gap-6 py-6 cursor-pointer list-none">
+            <span class="display text-[1.15rem] text-ink" style="font-weight:600">XXXX 會唔會拎到我嘅資料做研究？</span>
+            <span class="shrink-0 mt-1 text-ink55 group-open:rotate-45 transition-transform duration-200">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 5v14M5 12h14"/></svg>
+            </span>
+          </summary>
+          <div class="pb-6 text-[15px] text-ink70 leading-[1.8] max-w-[62ch]">
+            唔會。MVP 版本默認完全本地儲存，冇同步機制。如果將來推出研究參與計劃，會係獨立 opt-in — 有正式 IRB 審批、有知情同意書，你可以隨時退出。
+          </div>
+        </details>
+
+        <details class="group">
+          <summary class="flex items-start justify-between gap-6 py-6 cursor-pointer list-none">
+            <span class="display text-[1.15rem] text-ink" style="font-weight:600">要唔要收費？</span>
+            <span class="shrink-0 mt-1 text-ink55 group-open:rotate-45 transition-transform duration-200">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 5v14M5 12h14"/></svg>
+            </span>
+          </summary>
+          <div class="pb-6 text-[15px] text-ink70 leading-[1.8] max-w-[62ch]">
+            MVP 階段完全免費、無內購、無廣告。呢個係非營利嘅臨床合作項目。長遠嘅商業模式（例如跟醫院或復康中心合作）需要另行同用家商討。
+          </div>
+        </details>
+
+        <details class="group">
+          <summary class="flex items-start justify-between gap-6 py-6 cursor-pointer list-none">
+            <span class="display text-[1.15rem] text-ink" style="font-weight:600">PingPD 會唔會取代醫生診斷？</span>
+            <span class="shrink-0 mt-1 text-ink55 group-open:rotate-45 transition-transform duration-200">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 5v14M5 12h14"/></svg>
+            </span>
+          </summary>
+          <div class="pb-6 text-[15px] text-ink70 leading-[1.8] max-w-[62ch]">
+            絕對唔會。PingPD 係一個記錄同輔助溝通工具。App 入面嘅趨勢、建議都只係參考，任何藥物調整、治療方案轉變請諮詢你嘅主診醫生。
+          </div>
+        </details>
+
+        <details class="group">
+          <summary class="flex items-start justify-between gap-6 py-6 cursor-pointer list-none">
+            <span class="display text-[1.15rem] text-ink" style="font-weight:600">我唔識打乒乓球，可唔可以用？</span>
+            <span class="shrink-0 mt-1 text-ink55 group-open:rotate-45 transition-transform duration-200">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 5v14M5 12h14"/></svg>
+            </span>
+          </summary>
+          <div class="pb-6 text-[15px] text-ink70 leading-[1.8] max-w-[62ch]">
+            可以。症狀記錄、食藥提醒、趨勢圖等功能完全獨立於乒乓球模組。如果你另有其他運動（散步、太極、水療），可以自行喺「其他訓練」入面記錄時長同強度。
+          </div>
+        </details>
+
+        <details class="group">
+          <summary class="flex items-start justify-between gap-6 py-6 cursor-pointer list-none">
+            <span class="display text-[1.15rem] text-ink" style="font-weight:600">幾時可以落架正式版？</span>
+            <span class="shrink-0 mt-1 text-ink55 group-open:rotate-45 transition-transform duration-200">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 5v14M5 12h14"/></svg>
+            </span>
+          </summary>
+          <div class="pb-6 text-[15px] text-ink70 leading-[1.8] max-w-[62ch]">
+            Beta 預計喺 2026 年中對有意參與嘅病友／照顧者開放。正式上架 App Store 同 Play Store 暫定係 2026 年末，具體日期視臨床驗證結果調整。
+          </div>
+        </details>
+      </dl>
+    </div>
+  </section>
+
+  <!-- ============ COLOPHON / FOOTER ============ -->
+  <footer class="border-t hair border-ink15 bg-paper2">
+    <div class="max-w-6xl mx-auto px-6 py-14 grid md:grid-cols-12 gap-10 text-[13.5px] text-ink70 leading-relaxed">
+      <div class="md:col-span-5">
+        <p class="display text-[1.4rem] text-ink" style="font-weight:600">PingPD</p>
+        <p class="mt-2 caps text-ink55">Hong Kong Parkinson's Daily</p>
+        <p class="mt-5 max-w-sm">
+          同 XXXX 醫學院 神經科合作研究嘅柏金遜症每日記錄 app。MVP 階段，2026 春公測前預覽。
+        </p>
+
+        <p class="mt-8 text-[12px] text-ink55 border-l-2 border-rust pl-4 leading-relaxed max-w-sm">
+          PingPD 係輔助記錄工具，不能取代醫療診斷。任何藥物、劑量或治療方案變更，請先諮詢你嘅主診醫生。如有緊急情況請致電 999 或前往最近嘅急症室。
+        </p>
+      </div>
+
+      <div class="md:col-span-2">
+        <p class="caps text-ink55">前往</p>
+        <ul class="mt-4 space-y-2">
+          <li><a href="#why" class="hover:text-ink link">點解要記低</a></li>
+          <li><a href="#inside" class="hover:text-ink link">App 入面</a></li>
+          <li><a href="#pingpong" class="hover:text-ink link">點解係乒乓</a></li>
+          <li><a href="#privacy" class="hover:text-ink link">你嘅資料</a></li>
+          <li><a href="#clinical" class="hover:text-ink link">臨床合作</a></li>
+        </ul>
+      </div>
+
+      <div class="md:col-span-2">
+        <p class="caps text-ink55">法律</p>
+        <ul class="mt-4 space-y-2">
+          <li><a href="#" class="hover:text-ink link">私隱政策</a></li>
+          <li><a href="#" class="hover:text-ink link">使用條款</a></li>
+          <li><a href="#" class="hover:text-ink link">醫療免責聲明</a></li>
+          <li><a href="#" class="hover:text-ink link">IRB 審批文件</a></li>
+        </ul>
+      </div>
+
+      <div class="md:col-span-3">
+        <p class="caps text-ink55">聯絡</p>
+        <ul class="mt-4 space-y-2">
+          <li><a href="mailto:hello@pingpd.hk" class="hover:text-ink link">hello@pingpd.hk</a><span class="text-ink55"> · 一般查詢</span></li>
+          <li><a href="mailto:clinical@pingpd.hk" class="hover:text-ink link">clinical@pingpd.hk</a><span class="text-ink55"> · 醫護合作</span></li>
+          <li><a href="mailto:press@pingpd.hk" class="hover:text-ink link">press@pingpd.hk</a><span class="text-ink55"> · 傳媒</span></li>
+        </ul>
+        <p class="mt-6 caps text-ink55">位置</p>
+        <p class="mt-2">香港 · 新界沙田</p>
+      </div>
+    </div>
+
+    <div class="border-t hair border-ink15">
+      <div class="max-w-6xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[12px] text-ink55">
+        <p>© 2026 PingPD. Made in Hong Kong · Set in Noto Serif HK &amp; Fraunces.</p>
+        <p>Build 0.4.1-beta · 最後更新 2026-04-14</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============ JS: Reveal ============ -->
+  <script>
+    // Minimal opacity fade-in on scroll — no transform, no bounce
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+    // Highlight current nav item on scroll
+    const sections = ['why','inside','pingpong','clinical','privacy','faq'].map(id => document.getElementById(id));
+    const navLinks = document.querySelectorAll('.tnav a');
+    const nav = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + e.target.id));
+        }
+      });
+    }, { rootMargin: '-40% 0px -55% 0px' });
+    sections.forEach(s => s && nav.observe(s));
+  </script>
+</body>
+</html>
